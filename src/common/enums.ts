@@ -1,0 +1,46 @@
+export enum UserRole {
+  CUSTOMER = 'CUSTOMER',
+  MANAGER = 'MANAGER',
+  ADMIN = 'ADMIN'
+}
+
+export enum ProductCategory {
+  ELECTRONICS = 'ELECTRONICS',
+  FOOD = 'FOOD',
+  BOOKS = 'BOOKS',
+  CLOTHING = 'CLOTHING',
+  HYGIENE = 'HYGIENE',
+  MEDICINE = 'MEDICINE',
+  ESSENTIALS = 'ESSENTIALS'
+}
+
+export enum PromotionType {
+  PERCENTAGE = 'PERCENTAGE',
+  FIXED_AMOUNT = 'FIXED_AMOUNT',
+  FREE_SHIPPING = 'FREE_SHIPPING'
+}
+
+export enum ShippingZone {
+  FRANCE_METRO = 'FRANCE_METRO',
+  CORSE = 'CORSE',
+  DOM_TOM = 'DOM_TOM',
+  EUROPE = 'EUROPE',
+  INTERNATIONAL = 'INTERNATIONAL'
+}
+
+export enum LoyaltyTier {
+  BRONZE = 'BRONZE',
+  SILVER = 'SILVER',
+  GOLD = 'GOLD',
+  PLATINUM = 'PLATINUM'
+}
+
+export enum OrderStatus {
+  PENDING = 'PENDING',
+  CONFIRMED = 'CONFIRMED',
+  PREPARING = 'PREPARING',
+  SHIPPED = 'SHIPPED',
+  DELIVERED = 'DELIVERED',
+  CANCELLED = 'CANCELLED',
+  REFUNDED = 'REFUNDED'
+}
