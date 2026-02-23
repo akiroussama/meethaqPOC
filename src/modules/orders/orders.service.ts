@@ -82,4 +82,8 @@ export class OrdersService {
     if (!order) throw new Error(`Order ${orderId} not found`);
     return order;
   }
+  getOrder(orderId: string): Order {
+    return this.mustGet(orderId);
+  }
+
 }
