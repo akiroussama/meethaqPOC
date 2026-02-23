@@ -16,7 +16,7 @@ export class ShippingService {
     }
 
     if (loyaltyTier === LoyaltyTier.GOLD || loyaltyTier === LoyaltyTier.PLATINUM) return 0;
-    if (zone === ShippingZone.FRANCE_METRO && cartHt > 75) return 0;
+    if (cartHt > 75) return 0;
 
     const totalWeight = items.reduce((sum, item) => sum + item.quantity * item.unitWeightKg, 0);
     const base = this.basePriceForWeight(totalWeight) * SHIPPING_ZONE_MULTIPLIER[zone];
