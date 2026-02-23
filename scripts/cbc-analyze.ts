@@ -76,7 +76,33 @@ function ensureGitRef(ref: string): void {
 function listTargetBranches(): string[] {
   if (opts.branch) return [opts.branch];
   if (!opts.all) throw new Error('Provide --branch <name> or --all');
-  const lines = run('git for-each-ref --format="%(refname:short)" refs/heads/bug').split('\n').filter(Boolean);
+
+  let lines = run('git for-each-ref --format="%(refname:short)" refs/heads/bug/')
+    .split('\n')
+    .filter(Boolean);
+
+  if (lines.length === 0) {
+    try {
+      run('git fetch origin');
+    } catch {
+      // ignore fetch errors and keep local fallback behavior
+    }
+
+    const remotes = run('git for-each-ref --format="%(refname:short)" refs/remotes/origin/bug/')
+      .split('\n')
+      .filter(Boolean);
+
+    for (const remote of remotes) {
+      const local = remote.replace('origin/', '');
+      try {
+        run(`git branch --track ${local} ${remote}`);
+      } catch {
+        // already exists locally
+      }
+      lines.push(local);
+    }
+  }
+
   return lines;
 }
 

@@ -2,29 +2,27 @@ mappings:
   - rule_id: BR-001
     paths:
       - "src/modules/pricing/**"
-      - "src/common/constants/tax-rates*"
-      - "src/modules/products/**"
+      - "src/config/business-rules.ts"
+      - "src/common/enums.ts"
 
   - rule_id: BR-002
     paths:
       - "src/modules/pricing/**"
-      - "src/common/constants/quantity-discount*"
+      - "src/config/business-rules.ts"
 
   - rule_id: BR-003
     paths:
       - "src/modules/pricing/**"
       - "src/modules/promotions/**"
-      - "src/modules/cart/**"
 
   - rule_id: BR-004
     paths:
       - "src/modules/promotions/**"
-      - "src/modules/cart/**"
 
   - rule_id: BR-005
     paths:
-      - "src/modules/promotions/**"
       - "src/modules/pricing/**"
+      - "src/modules/promotions/**"
 
   - rule_id: BR-006
     paths:
@@ -44,14 +42,13 @@ mappings:
   - rule_id: BR-009
     paths:
       - "src/modules/orders/**"
-      - "src/modules/payments/**"
-      - "src/modules/loyalty/**"
       - "src/modules/inventory/**"
+      - "src/modules/loyalty/**"
 
   - rule_id: BR-010
     paths:
       - "src/modules/shipping/**"
-      - "src/common/constants/shipping*"
+      - "src/config/business-rules.ts"
 
   - rule_id: BR-011
     paths:
@@ -61,6 +58,7 @@ mappings:
     paths:
       - "src/modules/loyalty/**"
       - "src/modules/shipping/**"
+      - "src/config/business-rules.ts"
 
   - rule_id: BR-013
     paths:
@@ -71,10 +69,7 @@ mappings:
   - rule_id: BR-014
     paths:
       - "src/modules/inventory/**"
-      - "src/modules/notifications/**"
 
   - rule_id: BR-015
     paths:
-      - "src/modules/auth/**"
       - "src/modules/orders/**"
-      - "src/common/guards/**"

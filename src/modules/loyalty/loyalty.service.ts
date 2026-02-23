@@ -4,6 +4,13 @@ import { LOYALTY_TIER_CONFIG } from 'src/config/business-rules';
 
 @Injectable()
 export class LoyaltyService {
+  private static readonly TIER_ORDER: LoyaltyTier[] = [
+    LoyaltyTier.BRONZE,
+    LoyaltyTier.SILVER,
+    LoyaltyTier.GOLD,
+    LoyaltyTier.PLATINUM,
+  ];
+
   computeEarnedPoints(orderHt: number, promoLinesHt: number, isHappyHour: boolean): number {
     const base = Math.floor(orderHt - promoLinesHt * 0.5);
     return isHappyHour ? base * 2 : base;
@@ -14,6 +21,18 @@ export class LoyaltyService {
     if (pointsLast12Months >= LOYALTY_TIER_CONFIG[LoyaltyTier.GOLD].min) return LoyaltyTier.GOLD;
     if (pointsLast12Months >= LOYALTY_TIER_CONFIG[LoyaltyTier.SILVER].min) return LoyaltyTier.SILVER;
     return LoyaltyTier.BRONZE;
+  }
+
+  recalculateMonthly(pointsLast12Months: number, currentTier: LoyaltyTier): LoyaltyTier {
+    const newTier = this.getTier(pointsLast12Months);
+    const currentIdx = LoyaltyService.TIER_ORDER.indexOf(currentTier);
+    const newIdx = LoyaltyService.TIER_ORDER.indexOf(newTier);
+
+    if (newIdx < currentIdx - 1) {
+      return LoyaltyService.TIER_ORDER[currentIdx - 1];
+    }
+
+    return newTier;
   }
 
   pointsToDiscount(points: number, cartHt: number): { pointsUsed: number; discount: number } {
