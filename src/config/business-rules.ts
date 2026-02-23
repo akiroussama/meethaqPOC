@@ -5,7 +5,7 @@ export const VAT_BY_CATEGORY: Record<ProductCategory, number> = {
   [ProductCategory.FOOD]: 0.055,
   [ProductCategory.BOOKS]: 0.055,
   [ProductCategory.CLOTHING]: 0.2,
-  [ProductCategory.HYGIENE]: 0.055,
+  [ProductCategory.HYGIENE]: 0.2,
   [ProductCategory.MEDICINE]: 0.1,
   [ProductCategory.ESSENTIALS]: 0.055
 };
