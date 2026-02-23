@@ -50,27 +50,4 @@ Run all tests: `npm test`
 
 ## CBC Analysis (Phase 2)
 
-### Files
-- `.cbc/constitution.yaml`: corpus complet des règles métier.
-- `.cbc/jurisprudence.yaml`: cas positifs/négatifs/edge de référence.
-- `.cbc/cadastre.yaml`: mapping règles ↔ chemins de code.
-- `.cbc/config.yaml`: configuration modèle et analyse.
-
-### Commandes
-```bash
-# Analyser une branche
-npx ts-node scripts/cbc-analyze.ts --branch bug/tax-rate-hygiene
-
-# Analyser toutes les branches bug/*
-npx ts-node scripts/cbc-analyze.ts --all
-
-# Voir le prompt sans appeler l'API
-npx ts-node scripts/cbc-analyze.ts --branch bug/tax-rate-hygiene --dry-run
-```
-
-### Prérequis
-```bash
-export ANTHROPIC_API_KEY=sk-...
-```
-
-Les rapports JSON sont générés dans `.cbc/reports/*.json`.
+See detailed CBC usage in `.cbc/README.md`.
