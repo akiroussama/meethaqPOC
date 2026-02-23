@@ -1,0 +1,126 @@
+cases:
+  - rule_id: BR-001
+    type: positive
+    given: "Produit catégorie 'Électronique', prix HT = 100€"
+    when: "Calcul du prix TTC"
+    then: "TTC = 120€ (TVA 20%)"
+    source: "Spécification initiale"
+
+  - rule_id: BR-001
+    type: positive
+    given: "Produit catégorie 'Alimentation', prix HT = 10€"
+    when: "Calcul du prix TTC"
+    then: "TTC = 10.55€ (TVA 5.5%)"
+    source: "Spécification initiale"
+
+  - rule_id: BR-001
+    type: negative
+    given: "Produit catégorie 'Alimentation', prix HT = 10€"
+    when: "Calcul du prix TTC"
+    then: "TTC = 12€ (TVA 20% appliquée par erreur) — INCORRECT"
+    source: "Bug simulé : taux standard appliqué à l'alimentation"
+
+  - rule_id: BR-001
+    type: edge
+    given: "Produit catégorie 'Médicaments non remboursés', prix HT = 15€"
+    when: "Calcul du prix TTC"
+    then: "TTC = 16.50€ (TVA 10%, ni 20% ni 5.5%)"
+    source: "Catégorie intermédiaire souvent oubliée"
+
+  - rule_id: BR-003
+    type: positive
+    given: "Produit prix HT = 50€, costPrice = 30€, remise quantité -15%"
+    when: "Calcul du prix final HT"
+    then: "Prix HT = 42.50€ (> costPrice 30€, OK)"
+    source: "Cas normal"
+
+  - rule_id: BR-003
+    type: negative
+    given: "Produit prix HT = 35€, costPrice = 30€, remise quantité -15% = 29.75€"
+    when: "Calcul du prix final HT"
+    then: "Prix HT doit être ramené à 30€ (costPrice), PAS 29.75€"
+    source: "Bug simulé : costPrice non vérifié après remise"
+
+  - rule_id: BR-004
+    type: negative
+    given: "Code promo PERCENTAGE = 70%"
+    when: "Application du code"
+    then: "Doit être rejeté ou plafonné à 50%. PAS 70%."
+    source: "Bug simulé : pas de validation du plafond"
+
+  - rule_id: BR-005
+    type: negative
+    given: "Produit en vente flash à 25€, client commande 50 unités"
+    when: "Calcul du prix"
+    then: "Prix = 25€/unité (flash). PAS 22.50€ (flash + remise quantité -10%)."
+    source: "Bug simulé : cumul flash + quantité"
+
+  - rule_id: BR-008
+    type: positive
+    given: "Commande en statut PENDING"
+    when: "Client demande annulation"
+    then: "Annulation autorisée, stock libéré"
+    source: "Cas normal"
+
+  - rule_id: BR-008
+    type: negative
+    given: "Commande en statut SHIPPED"
+    when: "Client demande annulation"
+    then: "Annulation REFUSÉE. Seul le remboursement post-livraison est possible."
+    source: "Bug simulé : annulation permise après expédition"
+
+  - rule_id: BR-009
+    type: negative
+    given: "Commande DELIVERED il y a 45 jours"
+    when: "Client demande remboursement"
+    then: "Remboursement REFUSÉ (> 30 jours). PAS accepté."
+    source: "Bug simulé : pas de vérification du délai"
+
+  - rule_id: BR-009
+    type: negative
+    given: "Article payé 50€, demande de remboursement de 75€"
+    when: "Traitement du remboursement"
+    then: "Montant plafonné à 50€. PAS 75€."
+    source: "Bug simulé : remboursement supérieur au montant payé"
+
+  - rule_id: BR-010
+    type: positive
+    given: "Panier HT = 80€, zone = FRANCE_METRO"
+    when: "Calcul frais de port"
+    then: "Frais = 0€ (gratuit car > 75€)"
+    source: "Cas normal"
+
+  - rule_id: BR-010
+    type: negative
+    given: "Panier HT = 80€, zone = EUROPE"
+    when: "Calcul frais de port"
+    then: "Frais NON gratuits (le seuil 75€ ne s'applique qu'en France métro)"
+    source: "Bug simulé : gratuité appliquée hors France"
+
+  - rule_id: BR-010
+    type: negative
+    given: "Produit domesticOnly = true, zone = DOM_TOM"
+    when: "Ajout au panier"
+    then: "REFUSÉ. Produit non expédiable hors France métro."
+    source: "Bug simulé : pas de vérification domesticOnly"
+
+  - rule_id: BR-012
+    type: negative
+    given: "Client GOLD (3000 pts), recalcul mensuel donne 400 pts (BRONZE)"
+    when: "Recalcul du niveau"
+    then: "Client descend à SILVER (pas BRONZE). Protection anti-chute : max -1 niveau/mois."
+    source: "Bug simulé : descente directe de GOLD à BRONZE"
+
+  - rule_id: BR-013
+    type: negative
+    given: "Panier = 100€, client veut payer 50€ en points (50%)"
+    when: "Application des points"
+    then: "Maximum 30€ en points (30% du panier). PAS 50€."
+    source: "Bug simulé : pas de plafond 30%"
+
+  - rule_id: BR-015
+    type: negative
+    given: "CUSTOMER A tente d'accéder à la commande de CUSTOMER B"
+    when: "GET /orders/:id"
+    then: "403 Forbidden. PAS 200 OK avec les données."
+    source: "Bug simulé : pas de vérification ownership"

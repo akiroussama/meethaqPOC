@@ -47,3 +47,7 @@ Swagger docs: `http://localhost:3000/docs`
 - Integration test for `cart -> order -> delivery -> refund` flow.
 
 Run all tests: `npm test`
+
+## CBC Analysis (Phase 2)
+
+See detailed CBC usage in `.cbc/README.md`.

@@ -1,0 +1,201 @@
+rules:
+  - id: BR-001
+    title: "TVA par catégorie de produit"
+    category: "Pricing / Fiscalité"
+    rule: |
+      La TVA s'applique selon la catégorie du produit :
+      - Standard (Électronique, Vêtements) : 20%
+      - Alimentation : 5.5%
+      - Livres / Presse : 5.5%
+      - Médicaments non remboursés : 10%
+      - Produits de première nécessité / Hygiène : 5.5%
+      Le prix TTC = prix HT × (1 + taux TVA).
+      Les prix affichés au client sont TOUJOURS TTC.
+    type: VERIFIABLE
+    enforcement: WARN
+    status: ACTIVE
+    confidence: HIGH
+
+  - id: BR-002
+    title: "Prix dégressif par quantité"
+    category: "Pricing"
+    rule: |
+      Remises quantité appliquées sur le prix HT AVANT la TVA :
+      - 1-9 unités : prix standard
+      - 10-49 unités : -5%
+      - 50-99 unités : -10%
+      - 100+ unités : -15%
+    type: VERIFIABLE
+    enforcement: WARN
+    status: ACTIVE
+    confidence: HIGH
+
+  - id: BR-003
+    title: "Prix minimum garanti (costPrice)"
+    category: "Pricing"
+    rule: |
+      Aucun produit ne peut être vendu en dessous de son coût d'achat (costPrice).
+      Même avec toutes les remises cumulées, le prix final HT doit être ≥ costPrice.
+      Si le calcul donne un prix inférieur, appliquer costPrice comme plancher.
+    type: VERIFIABLE
+    enforcement: WARN
+    status: ACTIVE
+    confidence: HIGH
+
+  - id: BR-004
+    title: "Plafond de réduction des codes promo"
+    category: "Promotions"
+    rule: |
+      Un code promo de type PERCENTAGE ne peut jamais dépasser 50% de réduction.
+      Un code promo de type FIXED_AMOUNT ne peut pas rendre le panier négatif (minimum 0€).
+      Les codes non-stackable ne sont pas cumulables avec d'autres codes.
+    type: VERIFIABLE
+    enforcement: WARN
+    status: ACTIVE
+    confidence: HIGH
+
+  - id: BR-005
+    title: "Vente flash et remise quantité mutuellement exclusives"
+    category: "Promotions"
+    rule: |
+      Un produit en vente flash ne peut PAS bénéficier de remise quantité en plus.
+      Le prix flash est le prix final (hors TVA).
+      Le prix flash ne peut pas être inférieur au costPrice.
+    type: VERIFIABLE
+    enforcement: WARN
+    status: ACTIVE
+    confidence: HIGH
+
+  - id: BR-006
+    title: "Limites du panier"
+    category: "Cart"
+    rule: |
+      Maximum 50 articles distincts par panier.
+      Maximum 99 unités par article.
+      Un produit avec stock disponible = 0 ne peut pas être ajouté au panier.
+      Le panier expire après 30 minutes d'inactivité (stock réservé libéré).
+    type: VERIFIABLE
+    enforcement: WARN
+    status: ACTIVE
+    confidence: HIGH
+
+  - id: BR-007
+    title: "Réservation et disponibilité du stock"
+    category: "Inventory"
+    rule: |
+      Stock disponible = stock physique - stock réservé (paniers actifs).
+      L'ajout au panier réserve le stock (pas de décrémentation physique).
+      L'expiration du panier libère le stock réservé.
+      Le passage à CONFIRMED décrémente le stock physique.
+      L'annulation libère le stock réservé immédiatement.
+    type: VERIFIABLE
+    enforcement: WARN
+    status: ACTIVE
+    confidence: HIGH
+
+  - id: BR-008
+    title: "Cycle de vie des commandes"
+    category: "Orders"
+    rule: |
+      États : PENDING → CONFIRMED → PREPARING → SHIPPED → DELIVERED.
+      Annulation possible uniquement en PENDING ou CONFIRMED.
+      PREPARING, SHIPPED, DELIVERED : pas d'annulation, uniquement remboursement post-livraison.
+    type: VERIFIABLE
+    enforcement: WARN
+    status: ACTIVE
+    confidence: HIGH
+
+  - id: BR-009
+    title: "Règles de remboursement"
+    category: "Orders"
+    rule: |
+      Remboursement possible uniquement sur commandes DELIVERED.
+      Délai maximum : 30 jours après la date de livraison.
+      Le montant remboursé ne peut pas dépasser le montant payé pour l'article.
+      Le remboursement recrédite le stock physique.
+      Le remboursement recrédite les points fidélité utilisés.
+    type: VERIFIABLE
+    enforcement: WARN
+    status: ACTIVE
+    confidence: HIGH
+
+  - id: BR-010
+    title: "Calcul des frais de port"
+    category: "Shipping"
+    rule: |
+      Zones et majorations : FRANCE_METRO (base), CORSE (+30%), DOM_TOM (+80%), EUROPE (+50%), INTERNATIONAL (+120%).
+      Barème poids : 0-2kg=4.99€, 2-5kg=8.99€, 5-10kg=14.99€, 10-30kg=24.99€, 30kg+=1.50€/kg.
+      Livraison GRATUITE si panier HT > 75€ (France métro uniquement).
+      Livraison GRATUITE si client GOLD ou PLATINUM (toutes zones).
+      Produits domesticOnly interdits hors France métro.
+    type: VERIFIABLE
+    enforcement: WARN
+    status: ACTIVE
+    confidence: HIGH
+
+  - id: BR-011
+    title: "Accumulation des points fidélité"
+    category: "Loyalty"
+    rule: |
+      1€ HT dépensé = 1 point (arrondi inférieur).
+      Points doublés pendant les Happy Hours.
+      Articles en promotion : seulement 50% des points.
+      Les frais de port ne rapportent PAS de points.
+    type: VERIFIABLE
+    enforcement: WARN
+    status: ACTIVE
+    confidence: HIGH
+
+  - id: BR-012
+    title: "Niveaux de fidélité et avantages"
+    category: "Loyalty"
+    rule: |
+      BRONZE (0-499 pts) : aucun avantage.
+      SILVER (500-1999 pts) : livraison -20%.
+      GOLD (2000-4999 pts) : livraison gratuite + -5% sur tout.
+      PLATINUM (5000+ pts) : livraison gratuite + -10% sur tout + accès ventes privées.
+      Recalcul mensuel sur les 12 derniers mois.
+      Protection anti-chute : max -1 niveau par mois.
+    type: VERIFIABLE
+    enforcement: WARN
+    status: ACTIVE
+    confidence: HIGH
+
+  - id: BR-013
+    title: "Utilisation des points fidélité"
+    category: "Loyalty"
+    rule: |
+      100 points = 5€ de réduction.
+      Maximum 30% du panier payable en points.
+      Points déduits APRÈS commande confirmée (pas au panier).
+      Remboursement recrédite les points utilisés.
+    type: VERIFIABLE
+    enforcement: WARN
+    status: ACTIVE
+    confidence: HIGH
+
+  - id: BR-014
+    title: "Alertes et disponibilité stock"
+    category: "Inventory"
+    rule: |
+      Stock ≤ seuil d'alerte → notification MANAGER.
+      Stock = 0 → produit automatiquement "indisponible".
+      Réapprovisionnement → produit automatiquement "disponible".
+    type: VERIFIABLE
+    enforcement: WARN
+    status: ACTIVE
+    confidence: HIGH
+
+  - id: BR-015
+    title: "Permissions par rôle"
+    category: "Auth"
+    rule: |
+      CUSTOMER : voir produits, gérer SON panier/commandes, utiliser SES points.
+      MANAGER : gérer produits, stocks, promos, voir TOUTES les commandes.
+      ADMIN : tout + gérer utilisateurs + configurer système.
+      Un CUSTOMER ne peut PAS voir les commandes d'un autre CUSTOMER.
+      Un MANAGER ne peut PAS modifier les rôles utilisateurs.
+    type: VERIFIABLE
+    enforcement: WARN
+    status: ACTIVE
+    confidence: HIGH
