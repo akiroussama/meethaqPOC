@@ -1,12 +1,12 @@
 #!/usr/bin/env ts-node
 import Anthropic from '@anthropic-ai/sdk';
-import chalk from 'chalk';
+import * as chalk from 'chalk';
 import { Command } from 'commander';
 import { execSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { minimatch } from 'minimatch';
-import YAML from 'yaml';
+import * as YAML from 'yaml';
 
 type ConstitutionRule = {
   id: string;
