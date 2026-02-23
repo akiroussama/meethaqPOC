@@ -23,16 +23,9 @@ export class LoyaltyService {
     return LoyaltyTier.BRONZE;
   }
 
-  recalculateMonthly(pointsLast12Months: number, currentTier: LoyaltyTier): LoyaltyTier {
-    const newTier = this.getTier(pointsLast12Months);
-    const currentIdx = LoyaltyService.TIER_ORDER.indexOf(currentTier);
-    const newIdx = LoyaltyService.TIER_ORDER.indexOf(newTier);
-
-    if (newIdx < currentIdx - 1) {
-      return LoyaltyService.TIER_ORDER[currentIdx - 1];
-    }
-
-    return newTier;
+  recalculateMonthly(pointsLast12Months: number, _currentTier: LoyaltyTier): LoyaltyTier {
+    // Simplified: just return the tier matching the points
+    return this.getTier(pointsLast12Months);
   }
 
   pointsToDiscount(points: number, cartHt: number): { pointsUsed: number; discount: number } {
