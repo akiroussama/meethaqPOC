@@ -24,7 +24,7 @@ export interface PriceBreakdown {
 export class PricingService {
   calculate(input: PriceInput): PriceBreakdown {
     const vatRate = VAT_BY_CATEGORY[input.category];
-    const quantityDiscount = input.isFlashSale ? 0 : this.getQuantityDiscount(input.quantity);
+    const quantityDiscount = this.getQuantityDiscount(input.quantity);
 
     let unitHt = input.basePriceHt * (1 - quantityDiscount);
     if (input.isFlashSale && input.flashPriceHt) {
