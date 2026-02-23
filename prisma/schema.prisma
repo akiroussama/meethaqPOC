@@ -1,0 +1,142 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  CUSTOMER
+  MANAGER
+  ADMIN
+}
+
+enum ProductCategory {
+  ELECTRONICS
+  FOOD
+  BOOKS
+  CLOTHING
+  HYGIENE
+  MEDICINE
+  ESSENTIALS
+}
+
+enum PromotionType {
+  PERCENTAGE
+  FIXED_AMOUNT
+  FREE_SHIPPING
+}
+
+enum LoyaltyTier {
+  BRONZE
+  SILVER
+  GOLD
+  PLATINUM
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PREPARING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  passwordHash  String
+  role          UserRole @default(CUSTOMER)
+  loyaltyPoints Int      @default(0)
+  loyaltyTier   LoyaltyTier @default(BRONZE)
+  carts         Cart[]
+  orders        Order[]
+  createdAt     DateTime @default(now())
+}
+
+model Product {
+  id              String   @id @default(cuid())
+  sku             String   @unique
+  name            String
+  category        ProductCategory
+  priceHt         Decimal  @db.Decimal(10,2)
+  costPrice       Decimal  @db.Decimal(10,2)
+  weightKg        Decimal  @db.Decimal(10,3)
+  domesticOnly    Boolean  @default(false)
+  available       Boolean  @default(true)
+  stockAlertLevel Int      @default(10)
+  inventory       Inventory?
+  orderLines      OrderLine[]
+  createdAt       DateTime @default(now())
+}
+
+model Inventory {
+  id              String @id @default(cuid())
+  productId       String @unique
+  product         Product @relation(fields: [productId], references: [id])
+  physicalStock   Int
+  reservedStock   Int @default(0)
+  flashStockLimit Int?
+}
+
+model PromotionCode {
+  id                String   @id @default(cuid())
+  code              String   @unique
+  type              PromotionType
+  value             Decimal  @db.Decimal(10,2)
+  minCartHt         Decimal  @db.Decimal(10,2)
+  startsAt          DateTime
+  endsAt            DateTime
+  maxGlobalUses     Int
+  maxUsesPerUser    Int
+  globalUses        Int      @default(0)
+  stackable         Boolean  @default(false)
+}
+
+model Cart {
+  id             String @id @default(cuid())
+  userId         String
+  user           User @relation(fields: [userId], references: [id])
+  lastActivityAt DateTime @default(now())
+  expiresAt      DateTime
+  items          CartItem[]
+}
+
+model CartItem {
+  id         String @id @default(cuid())
+  cartId     String
+  productId  String
+  quantity   Int
+  unitPriceTtc Decimal @db.Decimal(10,2)
+  cart       Cart   @relation(fields: [cartId], references: [id])
+}
+
+model Order {
+  id            String @id @default(cuid())
+  userId         String
+  user           User @relation(fields: [userId], references: [id])
+  status         OrderStatus @default(PENDING)
+  subtotalHt     Decimal @db.Decimal(10,2)
+  shippingHt     Decimal @db.Decimal(10,2)
+  totalPaidTtc   Decimal @db.Decimal(10,2)
+  pointsUsed     Int @default(0)
+  deliveredAt    DateTime?
+  createdAt      DateTime @default(now())
+  lines          OrderLine[]
+}
+
+model OrderLine {
+  id          String @id @default(cuid())
+  orderId     String
+  order       Order @relation(fields: [orderId], references: [id])
+  productId   String
+  product     Product @relation(fields: [productId], references: [id])
+  quantity    Int
+  unitPriceHt Decimal @db.Decimal(10,2)
+  paidHt      Decimal @db.Decimal(10,2)
+  refundedHt  Decimal @db.Decimal(10,2) @default(0)
+}

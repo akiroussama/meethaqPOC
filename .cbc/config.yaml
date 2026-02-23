@@ -1,0 +1,9 @@
+llm:
+  provider: anthropic
+  model: claude-sonnet-4-20250514
+  max_tokens: 4096
+
+analysis:
+  min_confidence: 0.85
+  max_code_context_chars: 40000
+  max_rules_per_analysis: 5
