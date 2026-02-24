@@ -31,8 +31,6 @@ export class PricingService {
       unitHt = input.flashPriceHt;
     }
 
-    const minAllowedHt = input.costPrice;
-    unitHt = Math.max(unitHt, minAllowedHt);
 
     const unitTtc = this.round(unitHt * (1 + vatRate));
     const totalHt = this.round(unitHt * input.quantity);
