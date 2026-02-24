@@ -53,9 +53,15 @@ type AnalysisResult = {
   analysis_notes: string;
 };
 
+type AnalysisResultWithCost = AnalysisResult & {
+  inputTokens: number;
+  outputTokens: number;
+  costUsd: number;
+};
+
 const program = new Command()
   .option('--branch <name>', 'analyze a branch against main')
-  .option('--all', 'analyze all bug/* branches')
+  .option('--all', 'analyze all bug/*, subtle/* and legit/* branches')
   .option('--dry-run', 'print prompt only, do not call Claude API')
   .parse(process.argv);
 
@@ -77,9 +83,15 @@ function listTargetBranches(): string[] {
   if (opts.branch) return [opts.branch];
   if (!opts.all) throw new Error('Provide --branch <name> or --all');
 
-  let lines = run('git for-each-ref --format="%(refname:short)" refs/heads/bug/')
-    .split('\n')
-    .filter(Boolean);
+  const lines: string[] = [];
+  const prefixes = ['refs/heads/bug/', 'refs/heads/subtle/', 'refs/heads/legit/'];
+  for (const prefix of prefixes) {
+    lines.push(
+      ...run(`git for-each-ref --format="%(refname:short)" ${prefix}`)
+        .split('\n')
+        .filter(Boolean)
+    );
+  }
 
   if (lines.length === 0) {
     try {
@@ -88,9 +100,15 @@ function listTargetBranches(): string[] {
       // ignore fetch errors and keep local fallback behavior
     }
 
-    const remotes = run('git for-each-ref --format="%(refname:short)" refs/remotes/origin/bug/')
-      .split('\n')
-      .filter(Boolean);
+    const remotes: string[] = [];
+    const remotePrefixes = ['refs/remotes/origin/bug/', 'refs/remotes/origin/subtle/', 'refs/remotes/origin/legit/'];
+    for (const prefix of remotePrefixes) {
+      remotes.push(
+        ...run(`git for-each-ref --format="%(refname:short)" ${prefix}`)
+          .split('\n')
+          .filter(Boolean)
+      );
+    }
 
     for (const remote of remotes) {
       const local = remote.replace('origin/', '');
@@ -103,7 +121,7 @@ function listTargetBranches(): string[] {
     }
   }
 
-  return lines;
+  return [...new Set(lines)].sort();
 }
 
 function resolveRulesForFiles(files: string[], mappings: CadastreMapping[], maxRules: number): string[] {
@@ -213,7 +231,7 @@ IMPORTANT :
 - Retourne uniquement du JSON valide.`;
 }
 
-async function callClaude(prompt: string, cfg: CbcConfig): Promise<AnalysisResult> {
+async function callClaude(prompt: string, cfg: CbcConfig): Promise<AnalysisResultWithCost> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY is required (unless --dry-run)');
 
@@ -229,10 +247,19 @@ async function callClaude(prompt: string, cfg: CbcConfig): Promise<AnalysisResul
     .map((c) => c.text)
     .join('\n');
 
-  return extractJson(text);
+  const inputTokens = response.usage.input_tokens;
+  const outputTokens = response.usage.output_tokens;
+  const costUsd = (inputTokens * 3 + outputTokens * 15) / 1_000_000;
+
+  return {
+    ...extractJson(text),
+    inputTokens,
+    outputTokens,
+    costUsd
+  };
 }
 
-function printSummary(results: AnalysisResult[]): void {
+function printSummary(results: AnalysisResultWithCost[]): void {
   const rows = results.map((result) => {
     const avg =
       result.violations.length > 0
@@ -250,6 +277,19 @@ function printSummary(results: AnalysisResult[]): void {
   const totalViolations = rows.reduce((acc, row) => acc + row.violations, 0);
   const confidences = results.flatMap((r) => r.violations.map((v) => v.confidence));
   const avgConfidence = confidences.length > 0 ? Math.round((confidences.reduce((a, c) => a + c, 0) / confidences.length) * 100) : 0;
+  const totalCostUsd = results.reduce((acc, result) => acc + result.costUsd, 0);
+  const avgCostUsd = results.length > 0 ? totalCostUsd / results.length : 0;
+
+  const expectedPositive = (branch: string): boolean => branch.startsWith('bug/') || branch.startsWith('subtle/');
+  const expectedNegative = (branch: string): boolean => branch.startsWith('legit/');
+  const hasViolation = (result: AnalysisResult): boolean => result.violations.length > 0;
+
+  const truePositives = results.filter((r) => expectedPositive(r.branch) && hasViolation(r)).length;
+  const falsePositives = results.filter((r) => expectedNegative(r.branch) && hasViolation(r)).length;
+  const falseNegatives = results.filter((r) => expectedPositive(r.branch) && !hasViolation(r)).length;
+  const trueNegatives = results.filter((r) => expectedNegative(r.branch) && !hasViolation(r)).length;
+  const precision = truePositives + falsePositives > 0 ? truePositives / (truePositives + falsePositives) : 0;
+  const recall = truePositives + falseNegatives > 0 ? truePositives / (truePositives + falseNegatives) : 0;
 
   console.log(chalk.cyan('\n╔══════════════════════════════════════════════════════════════════╗'));
   console.log(chalk.cyan('║                    CBC ANALYSIS REPORT                          ║'));
@@ -263,8 +303,8 @@ function printSummary(results: AnalysisResult[]): void {
   console.log(chalk.cyan('╠══════════════════════════╬═══════════╬════════════╬═════════════╣'));
   console.log(chalk.cyan(`║ TOTAL                    ║ ${String(totalViolations).padEnd(9)} ║ Avg ${String(avgConfidence).padEnd(3)}%  ║             ║`));
   console.log(chalk.cyan('╠══════════════════════════╩═══════════╩════════════╩═════════════╣'));
-  console.log(chalk.cyan('║ True Positives: N/A | False Positives: N/A | Missed: N/A        ║'));
-  console.log(chalk.cyan('║ Precision: N/A | Cost: N/A                                      ║'));
+  console.log(chalk.cyan(`║ True Positives: ${String(truePositives).padEnd(2)} | False Positives: ${String(falsePositives).padEnd(2)} | False Negatives: ${String(falseNegatives).padEnd(2)} | True Negatives: ${String(trueNegatives).padEnd(2)} ║`));
+  console.log(chalk.cyan(`║ Precision: ${(precision * 100).toFixed(0)}% | Recall: ${(recall * 100).toFixed(0)}% | Cost: $${totalCostUsd.toFixed(4)} total ($${avgCostUsd.toFixed(4)} avg) ║`));
   console.log(chalk.cyan('╚════════════════════════════════════════════════════════════════╝\n'));
 }
 
@@ -281,7 +321,7 @@ async function main(): Promise<void> {
   const reportsDir = join('.cbc', 'reports');
   if (!existsSync(reportsDir)) mkdirSync(reportsDir, { recursive: true });
 
-  const results: AnalysisResult[] = [];
+  const results: AnalysisResultWithCost[] = [];
   for (const branch of branches) {
     ensureGitRef(branch);
     const diff = run(`git diff main..${branch}`);
@@ -296,11 +336,14 @@ async function main(): Promise<void> {
       console.log(chalk.yellow(`\n===== DRY RUN: ${branch} =====\n`));
       console.log(prompt);
       console.log(chalk.yellow(`\n===== END DRY RUN: ${branch} =====\n`));
-      const dryResult: AnalysisResult = {
+      const dryResult: AnalysisResultWithCost = {
         branch,
         violations: [],
         no_violation_files: files,
-        analysis_notes: 'Dry-run mode: no LLM call performed.'
+        analysis_notes: 'Dry-run mode: no LLM call performed.',
+        inputTokens: 0,
+        outputTokens: 0,
+        costUsd: 0
       };
       results.push(dryResult);
       writeFileSync(join(reportsDir, `${safeBranchFile(branch)}.json`), JSON.stringify(dryResult, null, 2));
@@ -308,16 +351,46 @@ async function main(): Promise<void> {
     }
 
     const llmResult = await callClaude(prompt, cfg);
-    const normalized: AnalysisResult = {
+    const normalized: AnalysisResultWithCost = {
       branch,
       violations: llmResult.violations ?? [],
       no_violation_files: llmResult.no_violation_files ?? [],
-      analysis_notes: llmResult.analysis_notes ?? ''
+      analysis_notes: llmResult.analysis_notes ?? '',
+      inputTokens: llmResult.inputTokens,
+      outputTokens: llmResult.outputTokens,
+      costUsd: llmResult.costUsd
     };
     results.push(normalized);
     writeFileSync(join(reportsDir, `${safeBranchFile(branch)}.json`), JSON.stringify(normalized, null, 2));
     console.log(chalk.green(`Analyzed ${branch}: ${normalized.violations.length} violation(s).`));
   }
+
+  const confidences = results.flatMap((r) => r.violations.map((v) => v.confidence));
+  const averageConfidence = confidences.length > 0 ? confidences.reduce((a, c) => a + c, 0) / confidences.length : 0;
+  const truePositives = results.filter((r) => (r.branch.startsWith('bug/') || r.branch.startsWith('subtle/')) && r.violations.length > 0).length;
+  const falsePositives = results.filter((r) => r.branch.startsWith('legit/') && r.violations.length > 0).length;
+  const falseNegatives = results.filter((r) => (r.branch.startsWith('bug/') || r.branch.startsWith('subtle/')) && r.violations.length === 0).length;
+  const trueNegatives = results.filter((r) => r.branch.startsWith('legit/') && r.violations.length === 0).length;
+  const precision = truePositives + falsePositives > 0 ? truePositives / (truePositives + falsePositives) : 0;
+  const recall = truePositives + falseNegatives > 0 ? truePositives / (truePositives + falseNegatives) : 0;
+  const totalCostUsd = results.reduce((acc, result) => acc + result.costUsd, 0);
+  const averageCostPerAnalysis = results.length > 0 ? totalCostUsd / results.length : 0;
+
+  const summary = {
+    date: new Date().toISOString(),
+    totalBranches: results.length,
+    truePositives,
+    falsePositives,
+    falseNegatives,
+    trueNegatives,
+    precision,
+    recall,
+    averageConfidence,
+    totalCostUsd,
+    averageCostPerAnalysis,
+    results
+  };
+  writeFileSync(join(reportsDir, '_summary.json'), JSON.stringify(summary, null, 2));
 
   printSummary(results);
 }
