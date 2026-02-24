@@ -26,9 +26,6 @@ export class PromotionsService {
     if (code.eligibleCategories && !categories.some((cat) => code.eligibleCategories?.includes(cat))) {
       throw new BadRequestException('Promo not eligible for cart categories');
     }
-    if (code.type === PromotionType.PERCENTAGE && code.value > 50) {
-      throw new BadRequestException('Percentage discount cannot exceed 50%');
-    }
   }
 
   applyPromo(code: PromoCode, cartHt: number): { discountHt: number; freeShipping: boolean; totalAfterDiscountHt: number } {
