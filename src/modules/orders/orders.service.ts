@@ -61,8 +61,6 @@ export class OrdersService {
   refund(orderId: string, productId: string, quantity: number, now = new Date()): { refundedHt: number; pointsToCredit: number } {
     const order = this.mustGet(orderId);
     if (order.status !== OrderStatus.DELIVERED || !order.deliveredAt) throw new BadRequestException('Refund only for delivered orders');
-    const days = (now.getTime() - order.deliveredAt.getTime()) / 86400000;
-    if (days > 30) throw new BadRequestException('Refund delay exceeded');
 
     const line = order.lines.find((x) => x.productId === productId);
     if (!line) throw new BadRequestException('Line not found');
