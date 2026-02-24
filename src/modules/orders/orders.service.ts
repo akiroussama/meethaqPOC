@@ -51,7 +51,7 @@ export class OrdersService {
 
   cancel(orderId: string): void {
     const order = this.mustGet(orderId);
-    if (![OrderStatus.PENDING, OrderStatus.CONFIRMED].includes(order.status)) {
+    if (![OrderStatus.PENDING, OrderStatus.CONFIRMED, OrderStatus.PREPARING, OrderStatus.SHIPPED].includes(order.status)) {
       throw new BadRequestException('Cancellation not allowed');
     }
     for (const line of order.lines) this.inventoryService.release(line.productId, line.quantity);
