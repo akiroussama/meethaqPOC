@@ -37,8 +37,8 @@ export class LoyaltyService {
 
   pointsToDiscount(points: number, cartHt: number): { pointsUsed: number; discount: number } {
     const rawDiscount = (Math.floor(points / 100) * 5);
-    const maxDiscount = cartHt * 0.3;
-    const discount = Math.min(rawDiscount, maxDiscount);
+    
+    const discount = rawDiscount;
     const pointsUsed = Math.floor(discount / 5) * 100;
     return { pointsUsed, discount: Math.round(discount * 100) / 100 };
   }
